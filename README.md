@@ -1,1 +1,1 @@
-Wallpaper generator(Tkinter)
+
