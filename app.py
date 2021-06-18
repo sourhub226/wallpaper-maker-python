@@ -8,8 +8,7 @@ from tkinter import (
     colorchooser,
     filedialog,
 )
-
-import time
+from threading import Timer
 import os
 from PIL import Image, ImageTk
 
@@ -28,9 +27,13 @@ root.geometry(
     "{}x{}+{}-{}".format(screen_width, screen_height, x_cordinate, y_cordinate)
 )
 
-label_bg_color = "#f5f5f5"
-app_bg_color = "white"
+label_bg_color = "#f0f0f0"
+app_bg_color = "#f7f7f7"
 status_bg_color = "#404144"
+custom_yellow = "#FCDC7A"
+custom_green = "#54EFA1"
+custom_red = "#FF5555"
+custom_orange = "#F7AB6D"
 
 root.title("Wallpaper Maker")
 root.config(bg=app_bg_color)
@@ -52,7 +55,9 @@ def make_sidebar():
     for fn in os.listdir(style_path):
         print(fn)
         small_img = ImageTk.PhotoImage(
-            Image.open(f"{style_path}{fn}").resize((256, 144), Image.ANTIALIAS)
+            Image.open(f"{style_path}{fn}")
+            .resize((256, 144), Image.ANTIALIAS)
+            .convert("RGBA")
         )
         label = Label(
             window,
@@ -63,7 +68,7 @@ def make_sidebar():
             bg=label_bg_color,
         )
         label.photo = small_img
-        label.pack()
+        label.pack(padx=(2, 0))
         label.bind("<Button-1>", lambda _, arg=label.cget("text"): select_style(arg))
         labels.append(label)
         image_names.append(fn)
@@ -79,7 +84,7 @@ def select_style(arg):
     global style, style_selected, color_selected
     preview_area.delete("all")
     preview_area.create_image(0, 0, anchor="nw", image=preview_img)
-    status_label2.config(text="Pick a color", bg="yellow", fg="black")
+    status_label2.config(text="Pick a color", bg=custom_yellow, fg="black")
     status_label3.config(text="Generate preview", bg=status_bg_color, fg="white")
     status_label4.config(text="Save", bg=status_bg_color, fg="white")
     color_selected = False
@@ -89,13 +94,13 @@ def select_style(arg):
     selected_label = labels[image_names.index(style)]
     selected_label.config(borderwidth=3, relief="solid")
     style_selected = True
-    status_label1.config(text="Style selected", bg="green", fg="white")
+    status_label1.config(text="Style selected", bg=custom_green, fg="black")
 
 
 def make_image(style, to_save, save_as="tmp.png"):
     white_background = Image.new("RGB", (1920, 1080), "white")
     color_background = Image.new("RGBA", (1920, 1080), color)
-    img = Image.open(f"{style_path}{style}")
+    img = Image.open(f"{style_path}{style}").convert("RGBA")
     white_background.paste(color_background, (0, 0), color_background)
     white_background.paste(img, (0, 0), img)
     if to_save:
@@ -112,14 +117,16 @@ def generate_preview():
             im = ImageTk.PhotoImage(im)
             preview_area.create_image(8, 9, anchor="nw", image=im)
             # generated = True
-            status_label3.config(text="Preview Generated", bg="green", fg="white")
-            status_label4.config(text="Save", bg="yellow", fg="black")
+            status_label3.config(text="Preview Generated", bg=custom_green, fg="black")
+            status_label4.config(text="Save", bg=custom_yellow, fg="black")
         else:
             print("select color")
-            status_label2.config(text="Please select a color", bg="red", fg="black")
+            status_label2.config(
+                text="Please select a color", bg=custom_red, fg="black"
+            )
     else:
         print("select style")
-        status_label1.config(text="Please select a style", bg="red", fg="black")
+        status_label1.config(text="Please select a style", bg=custom_red, fg="black")
 
 
 def color_picker():
@@ -131,10 +138,12 @@ def color_picker():
         selected_color = colorchooser.askcolor(color=(240, 81, 84))[0]
         if selected_color is None:
             print("color selection failed")
-            status_label2.config(text="Color selection failed", bg="red", fg="black")
+            status_label2.config(
+                text="Color selection failed", bg=custom_red, fg="black"
+            )
             return
-        status_label2.config(text="Color selected", bg="green", fg="white")
-        status_label3.config(text="Generate preview", bg="yellow", fg="black")
+        status_label2.config(text="Color selected", bg=custom_green, fg="black")
+        status_label3.config(text="Generate preview", bg=custom_yellow, fg="black")
         color_selected = True
         color_list = [int(t) for t in selected_color]
         color = tuple(color_list)
@@ -142,14 +151,16 @@ def color_picker():
 
     else:
         print("select color")
-        status_label1.config(text="Please select a style", bg="red", fg="black")
+        status_label1.config(text="Please select a style", bg=custom_red, fg="black")
 
 
 def save_img():
     global color_selected, style_selected, style
     if style_selected:
         if color_selected:
-            status_label4.config(text="Choose file location", bg="orange", fg="black")
+            status_label4.config(
+                text="Choose file location", bg=custom_orange, fg="black"
+            )
             f_location = filedialog.asksaveasfilename(
                 parent=root,
                 title="Save image",
@@ -162,21 +173,28 @@ def save_img():
             )
             if f_location == "":
                 print("save FAILED")
-                status_label4.config(text="Save failed", bg="red", fg="black")
+                status_label4.config(text="Save failed", bg=custom_red, fg="black")
                 return
             print(f_location)
-            status_label4.config(text="Saving...", bg="yellow", fg="black")
+            status_label4.config(text="Saving...", bg=custom_yellow, fg="black")
             status_label4.update()
             make_image(style, True, f_location)
-            time.sleep(3)
-            status_label4.config(text="Saved successfully", bg="green", fg="white")
+            # time.sleep(3)
+            Timer(
+                3,
+                lambda: status_label4.config(
+                    text="Saved successfully", bg=custom_green, fg="black"
+                ),
+            ).start()
             print("saved")
         else:
             print("select color")
-            status_label2.config(text="Please select a color", bg="red", fg="black")
+            status_label2.config(
+                text="Please select a color", bg=custom_red, fg="black"
+            )
     else:
         print("select style")
-        status_label1.config(text="Please select a style", bg="red", fg="black")
+        status_label1.config(text="Please select a style", bg=custom_red, fg="black")
 
 
 frame = Frame(root)
@@ -205,7 +223,9 @@ preview_area.place(
     y=screen_height - preview_area.winfo_reqheight() - 31,
 )
 
-status_label1 = Label(root, text="Select a style", width=45, bg="yellow", fg="black")
+status_label1 = Label(
+    root, text="Select a style", width=45, bg=custom_yellow, fg="black"
+)
 status_label1.place(x=0, y=screen_height - 21)
 status_label2 = Label(
     root, text="Pick a color", width=45, bg=status_bg_color, fg="white"
@@ -239,7 +259,7 @@ style_label.place(
 )
 
 color_btn = Button(
-    root, text="choose color", relief="groove", bg=label_bg_color, command=color_picker
+    root, text="Choose color", relief="groove", bg=label_bg_color, command=color_picker
 )
 color_btn.place(x=332, y=20)
 
@@ -263,7 +283,9 @@ preview_label.place(
     y=screen_height - 570,
 )
 
-preview_img = ImageTk.PhotoImage(Image.open(f"{asset_path}preview back.png"))
+preview_img = ImageTk.PhotoImage(
+    Image.open(f"{asset_path}preview back.png").convert("RGBA")
+)
 preview_area.create_image(0, 0, anchor="nw", image=preview_img)
 
 make_sidebar()
