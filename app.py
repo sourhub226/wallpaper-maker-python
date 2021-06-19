@@ -3,14 +3,17 @@ from tkinter import (
     Canvas,
     Frame,
     Label,
+    PhotoImage,
     Scrollbar,
     Tk,
     colorchooser,
     filedialog,
+    ttk,
 )
 from threading import Timer
 import os
 from PIL import Image, ImageTk
+import re
 
 root = Tk()
 
@@ -27,13 +30,15 @@ root.geometry(
     "{}x{}+{}-{}".format(screen_width, screen_height, x_cordinate, y_cordinate)
 )
 
-label_bg_color = "#f0f0f0"
+
 app_bg_color = "#f7f7f7"
 status_bg_color = "#404144"
 custom_yellow = "#FCDC7A"
 custom_green = "#54EFA1"
 custom_red = "#FF5555"
 custom_orange = "#F7AB6D"
+
+pixelVirtual = PhotoImage(width=1, height=1)
 
 root.title("Wallpaper Maker")
 root.config(bg=app_bg_color)
@@ -65,7 +70,6 @@ def make_sidebar():
             image=small_img,
             relief="flat",
             borderwidth=3,
-            bg=label_bg_color,
         )
         label.photo = small_img
         label.pack(padx=(2, 0))
@@ -78,6 +82,33 @@ def make_sidebar():
 def reset_borders():
     for label in labels:
         label.config(borderwidth=3, relief="flat")
+
+
+def validate_hex():
+    global color, color_selected
+    if hex_entry.get() == "":
+        return True
+    hex_code = hex_entry.get()
+    hex_code = hex_code if "#" in hex_code else "#" + hex_code
+    print(hex_code)
+    match = re.search(r"^#(?:[0-9a-fA-F]{3}){1,2}$", hex_code)
+    if match:
+        return hex_to_rgb(hex_code)
+    status_label3.config(text="Generate preview", bg=status_bg_color, fg="white")
+    status_label4.config(text="Save", bg=status_bg_color, fg="white")
+    return False
+
+
+def hex_to_rgb(hex_code):
+    global color, color_selected
+    color_selected = True
+    if len(hex_code) == 4:
+        hex_code = "#{}".format("".join(2 * c for c in hex_code.lstrip("#")))
+    print(hex_code)
+    color = tuple(int(hex_code.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+    print(color)
+    status_label2.config(text="Color selected", bg=custom_green, fg="black")
+    return True
 
 
 def select_style(arg):
@@ -98,6 +129,7 @@ def select_style(arg):
 
 
 def make_image(style, to_save, save_as="tmp.png"):
+    global color
     white_background = Image.new("RGB", (1920, 1080), "white")
     color_background = Image.new("RGBA", (1920, 1080), color)
     img = Image.open(f"{style_path}{style}").convert("RGBA")
@@ -111,8 +143,9 @@ def make_image(style, to_save, save_as="tmp.png"):
 def generate_preview():
     global im, style, style_selected, color_selected, color
     preview_area.delete("all")
+    # color_selected=False
     if style_selected:
-        if color_selected:
+        if validate_hex():
             im = make_image(style, False).resize((880, 495), Image.ANTIALIAS)
             im = ImageTk.PhotoImage(im)
             preview_area.create_image(8, 9, anchor="nw", image=im)
@@ -122,7 +155,7 @@ def generate_preview():
         else:
             print("select color")
             status_label2.config(
-                text="Please select a color", bg=custom_red, fg="black"
+                text="Please select a valid color", bg=custom_red, fg="black"
             )
     else:
         print("select style")
@@ -135,13 +168,18 @@ def color_picker():
     status_label4.config(text="Save", bg=status_bg_color, fg="white")
     # generated = False
     if style_selected:
+        color_selected = False
+        status_label2.config(text="Pick a color", bg=custom_yellow, fg="black")
+        # hex_entry.config(state="active")
+        hex_entry.delete(0, "end")
         selected_color = colorchooser.askcolor(color=(240, 81, 84))[0]
         if selected_color is None:
             print("color selection failed")
-            status_label2.config(
-                text="Color selection failed", bg=custom_red, fg="black"
-            )
+            # status_label2.config(
+            #     text="Color selection failed", bg=custom_red, fg="black"
+            # )
             return
+        # hex_entry.config(state="disabled")
         status_label2.config(text="Color selected", bg=custom_green, fg="black")
         status_label3.config(text="Generate preview", bg=custom_yellow, fg="black")
         color_selected = True
@@ -190,7 +228,7 @@ def save_img():
         else:
             print("select color")
             status_label2.config(
-                text="Please select a color", bg=custom_red, fg="black"
+                text="Please select a valid color", bg=custom_red, fg="black"
             )
     else:
         print("select style")
@@ -205,7 +243,6 @@ style_area = Canvas(
     height=screen_height - 70,
     relief="flat",
     borderwidth=3,
-    bg=label_bg_color,
 )
 window = Frame(style_area)
 scrollbar = Scrollbar(frame, orient="vertical", command=style_area.yview)
@@ -217,7 +254,7 @@ window.bind(
     "<Configure>", lambda _: style_area.configure(scrollregion=style_area.bbox("all"))
 )
 
-preview_area = Canvas(root, bg=label_bg_color, width=892, height=510)
+preview_area = Canvas(root, width=892, height=510)
 preview_area.place(
     x=style_area.winfo_reqwidth() + scrollbar.winfo_reqwidth() + 21,
     y=screen_height - preview_area.winfo_reqheight() - 31,
@@ -246,7 +283,8 @@ status_label4.place(
     y=screen_height - 21,
 )
 
-style_label = Label(root, text="Styles", bg=label_bg_color, width=41)
+
+style_label = Label(root, text="- Styles -", width=41)
 style_label.place(
     x=9
     + (
@@ -259,23 +297,83 @@ style_label.place(
 )
 
 color_btn = Button(
-    root, text="Choose color", relief="groove", bg=label_bg_color, command=color_picker
+    root,
+    text="Choose color",
+    relief="groove",
+    command=color_picker,
+    image=pixelVirtual,
+    width=100,
+    height=33,
+    compound="c",
 )
-color_btn.place(x=332, y=20)
-
-save_btn = Button(
-    root, text="Save", relief="groove", bg=label_bg_color, command=save_img
-)
-save_btn.place(x=532, y=20)
+color_btn.place(x=style_area.winfo_reqwidth() + 40, y=5)
 
 generate_btn = Button(
-    root, text="Generate", relief="groove", bg=label_bg_color, command=generate_preview
+    root,
+    text="Generate",
+    relief="groove",
+    command=generate_preview,
+    image=pixelVirtual,
+    width=100,
+    height=33,
+    compound="c",
 )
-generate_btn.place(x=432, y=20)
+generate_btn.place(x=screen_width - 230, y=5)
 
-# title_label = Label(root, text="Wallpaper Maker", font=("Arial", 20), bg="white")
-# title_label.place(x=600, y=10)
-preview_label = Label(root, text="Preview Area", bg=label_bg_color, width=127)
+save_btn = Button(
+    root,
+    text="Save",
+    command=save_img,
+    relief="groove",
+    image=pixelVirtual,
+    width=100,
+    height=33,
+    compound="c",
+)
+save_btn.place(x=screen_width - 120, y=5)
+
+
+or_label = Label(
+    root,
+    text="or",
+    image=pixelVirtual,
+    width=35,
+    height=33,
+    compound="c",
+)
+or_label.place(x=style_area.winfo_reqwidth() + color_btn.winfo_reqwidth() + 45, y=5)
+
+hex_label = Label(
+    root,
+    text="Enter HEX color code (#) ->",
+    image=pixelVirtual,
+    width=150,
+    height=33,
+    compound="c",
+)
+hex_label.place(
+    x=style_area.winfo_reqwidth()
+    + color_btn.winfo_reqwidth()
+    + or_label.winfo_reqwidth()
+    + 50,
+    y=5,
+)
+
+hex_entry = ttk.Entry(
+    root,
+)
+hex_entry.place(
+    x=style_area.winfo_reqwidth()
+    + color_btn.winfo_reqwidth()
+    + or_label.winfo_reqwidth()
+    + hex_label.winfo_reqwidth()
+    + 55,
+    y=5,
+    width=100,
+    height=39,
+)
+
+preview_label = Label(root, text="- Preview Area -", width=127)
 preview_label.place(
     x=(preview_area.winfo_reqwidth() - preview_label.winfo_reqwidth()) / 2
     + style_area.winfo_reqwidth()
