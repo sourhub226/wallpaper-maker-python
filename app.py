@@ -391,5 +391,5 @@ make_sidebar()
 print(root.winfo_screenheight())
 
 
-root.protocol("WM_DELETE_WINDOW", lambda: root.destroy())
+root.protocol("WM_DELETE_WINDOW", root.destroy)
 root.mainloop()
