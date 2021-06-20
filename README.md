@@ -9,7 +9,7 @@ A material design inspired flat wallpaper maker.
 
 GUI built using `Tkinter` module in python.
 
-<!-- put pic here -->
+![preview](preview.png)
 
 ### Python Dependencies:
 
