@@ -44,19 +44,27 @@ root.title("Wallpaper Maker")
 root.config(bg=app_bg_color)
 root.resizable(False, False)
 
-
-image_names = []
-labels = []
-x = y = style = color = 0
-im = None
-style_selected = color_selected = False
-
 style_path = "styles/"
 asset_path = "assets/"
 
 
+class Global:
+    def __init__(self):
+        self.image_names = []
+        self.labels = []
+        self.style = None
+        self.color = None
+        self.im = None
+        self.style_selected = False
+        self.color_selected = False
+
+
+Global = Global()
+
+
 def make_sidebar():
-    global x, image_names, labels
+    # global image_names, labels
+
     for file_name in os.listdir(style_path):
         print(file_name)
         small_img = ImageTk.PhotoImage(
@@ -74,18 +82,17 @@ def make_sidebar():
         label.photo = small_img
         label.pack(padx=(2, 0))
         label.bind("<Button-1>", lambda _, arg=label.cget("text"): select_style(arg))
-        labels.append(label)
-        image_names.append(file_name)
-        x += 1
+        Global.labels.append(label)
+        Global.image_names.append(file_name)
 
 
 def reset_borders():
-    for label in labels:
+    for label in Global.labels:
         label.config(borderwidth=3, relief="flat")
 
 
 def validate_hex():
-    global color, color_selected
+    # global color, color_selected
     if hex_entry.get() == "":
         return True
     hex_code = hex_entry.get()
@@ -100,55 +107,55 @@ def validate_hex():
 
 
 def hex_to_rgb(hex_code):
-    global color, color_selected
-    color_selected = True
+    # global color, color_selected
+    Global.color_selected = True
     if len(hex_code) == 4:
         hex_code = "#{}".format("".join(2 * c for c in hex_code.lstrip("#")))
     print(hex_code)
-    color = tuple(int(hex_code.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
-    print(color)
+    Global.color = tuple(int(hex_code.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+    print(Global.color)
     status_label2.config(text="Color selected", bg=custom_green, fg="black")
     return True
 
 
 def select_style(arg):
-    global style, style_selected, color_selected
+    # global style, style_selected, color_selected
     preview_area.delete("all")
     preview_area.create_image(0, 0, anchor="nw", image=preview_img)
     status_label2.config(text="Pick a color", bg=custom_yellow, fg="black")
     status_label3.config(text="Generate preview", bg=status_bg_color, fg="white")
     status_label4.config(text="Save", bg=status_bg_color, fg="white")
-    color_selected = False
+    Global.color_selected = False
     print(arg)
-    style = arg
+    Global.style = arg
     reset_borders()
-    selected_label = labels[image_names.index(style)]
+    selected_label = Global.labels[Global.image_names.index(Global.style)]
     selected_label.config(borderwidth=3, relief="solid")
-    style_selected = True
+    Global.style_selected = True
     status_label1.config(text="Style selected", bg=custom_green, fg="black")
 
 
-def make_image(style, to_save, save_as="tmp.png"):
-    global color
+def make_image(to_save, save_as="tmp.png"):
+    # global color
     white_background = Image.new("RGB", (1920, 1080), "white")
-    color_background = Image.new("RGBA", (1920, 1080), color)
-    img = Image.open(f"{style_path}{style}").convert("RGBA")
+    color_background = Image.new("RGBA", (1920, 1080), Global.color)
+    img = Image.open(f"{style_path}{Global.style}").convert("RGBA")
     white_background.paste(color_background, (0, 0), color_background)
     white_background.paste(img, (0, 0), img)
     if to_save:
         white_background.save(save_as)
+    # white_background.show()
     return white_background
 
 
 def generate_preview():
-    global im, style, style_selected, color_selected, color
+    # global  style, style_selected, color_selected, color
     preview_area.delete("all")
-    # color_selected=False
-    if style_selected:
+    if Global.style_selected:
         if validate_hex():
-            im = make_image(style, False).resize((880, 495), Image.ANTIALIAS)
-            im = ImageTk.PhotoImage(im)
-            preview_area.create_image(8, 9, anchor="nw", image=im)
+            Global.im = make_image(False).resize((880, 495), Image.ANTIALIAS)
+            Global.im = ImageTk.PhotoImage(Global.im)
+            preview_area.create_image(8, 9, anchor="nw", image=Global.im)
             # generated = True
             status_label3.config(text="Preview Generated", bg=custom_green, fg="black")
             status_label4.config(text="Save", bg=custom_yellow, fg="black")
@@ -163,12 +170,12 @@ def generate_preview():
 
 
 def color_picker():
-    global color, color_selected, style_selected
+    # global color, color_selected, style_selected
     status_label3.config(text="Generate preview", bg=status_bg_color, fg="white")
     status_label4.config(text="Save", bg=status_bg_color, fg="white")
     # generated = False
-    if style_selected:
-        color_selected = False
+    if Global.style_selected:
+        Global.color_selected = False
         status_label2.config(text="Pick a color", bg=custom_yellow, fg="black")
         # hex_entry.config(state="active")
         hex_entry.delete(0, "end")
@@ -182,10 +189,10 @@ def color_picker():
         # hex_entry.config(state="disabled")
         status_label2.config(text="Color selected", bg=custom_green, fg="black")
         status_label3.config(text="Generate preview", bg=custom_yellow, fg="black")
-        color_selected = True
+        Global.color_selected = True
         color_list = [int(t) for t in selected_color]
-        color = tuple(color_list)
-        print(color)
+        Global.color = tuple(color_list)
+        print(Global.color)
 
     else:
         print("select color")
@@ -193,9 +200,9 @@ def color_picker():
 
 
 def save_img():
-    global color_selected, style_selected, style
-    if style_selected:
-        if color_selected:
+    # global color_selected, style_selected, style
+    if Global.style_selected:
+        if Global.color_selected:
             status_label4.config(
                 text="Choose file location", bg=custom_orange, fg="black"
             )
@@ -207,7 +214,7 @@ def save_img():
                 initialdir=os.path.join(
                     os.path.join(os.environ["USERPROFILE"]), "Desktop"
                 ),
-                initialfile="Generated Wallpaper",
+                initialfile=f"Flat Wallpaper {'#%02x%02x%02x' % Global.color}",
             )
             if f_location == "":
                 print("save FAILED")
@@ -216,7 +223,7 @@ def save_img():
             print(f_location)
             status_label4.config(text="Saving...", bg=custom_yellow, fg="black")
             status_label4.update()
-            make_image(style, True, f_location)
+            make_image(True, f_location)
             # time.sleep(3)
             Timer(
                 3,
