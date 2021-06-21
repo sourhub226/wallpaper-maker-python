@@ -57,16 +57,16 @@ asset_path = "assets/"
 
 def make_sidebar():
     global x, image_names, labels
-    for fn in os.listdir(style_path):
-        print(fn)
+    for file_name in os.listdir(style_path):
+        print(file_name)
         small_img = ImageTk.PhotoImage(
-            Image.open(f"{style_path}{fn}")
+            Image.open(f"{style_path}{file_name}")
             .resize((256, 144), Image.ANTIALIAS)
             .convert("RGBA")
         )
         label = Label(
             window,
-            text=fn,
+            text=file_name,
             image=small_img,
             relief="flat",
             borderwidth=3,
@@ -75,7 +75,7 @@ def make_sidebar():
         label.pack(padx=(2, 0))
         label.bind("<Button-1>", lambda _, arg=label.cget("text"): select_style(arg))
         labels.append(label)
-        image_names.append(fn)
+        image_names.append(file_name)
         x += 1
 
 
