@@ -78,6 +78,7 @@ def make_sidebar():
             image=small_img,
             relief="flat",
             borderwidth=3,
+            bg="#d2d2d2",
         )
         label.photo = small_img
         label.pack(padx=(2, 0))
@@ -214,7 +215,7 @@ def save_img():
                 initialdir=os.path.join(
                     os.path.join(os.environ["USERPROFILE"]), "Desktop"
                 ),
-                initialfile=f"Flat Wallpaper {'#%02x%02x%02x' % Global.color}",
+                initialfile=f"Material Wallpaper {'#%02x%02x%02x'.upper() % Global.color}",
             )
             if f_location == "":
                 print("save FAILED")
